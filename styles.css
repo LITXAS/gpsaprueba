@@ -1,0 +1,26 @@
+/* Estilo para el contenedor del mapa */
+#map {
+    height: 90vh;
+    width: 100%;
+  }
+  
+  /* Estilos para los controles de entrada y botones */
+  .controls {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  }
+  
+  .controls input,
+  .controls button {
+    display: block;
+    margin: 5px 0;
+    padding: 8px;
+    width: 200px;
+  }
+  
