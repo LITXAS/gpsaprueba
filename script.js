@@ -11,37 +11,58 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 const routingControl = L.Routing.control({
     waypoints: [],
     routeWhileDragging: true,
-    geocoder: L.Control.Geocoder.nominatim(),
-    createMarker: () => null, // Evita marcadores por defecto
+    createMarker: () => null // Evita marcadores por defecto
 }).addTo(map);
 
-let userMarker; // Variable para el marcador circular del usuario
-let userPath = []; // Arreglo para almacenar la trayectoria del usuario
+let userMarker;
+let userPath = [];
 
-// Función para trazar la ruta
+// Función para convertir la ciudad a coordenadas y trazar la ruta
 function drawRoute() {
-    const origin = document.getElementById('origin').value;
-    const destination = document.getElementById('destination').value;
+    const originCity = document.getElementById('origin').value;
+    const destinationCity = document.getElementById('destination').value;
 
-    // Configuración de la API de GraphHopper
-    const apiKey = 'ea0313bf-ed8e-43de-a131-6b1d2fcde1ef';
-    const url = `https://graphhopper.com/api/1/route?point=${origin}&point=${destination}&key=${apiKey}&vehicle=car&locale=es&instructions=true&calcPoints=true`;
+    if (originCity && destinationCity) {
+        const geocoder = L.Control.Geocoder.nominatim();
 
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            if (data.paths && data.paths.length > 0) {
-                const route = data.paths[0];
-                const routeCoordinates = route.points.coordinates.map(coord => [coord[1], coord[0]]); // Convierte a [lat, lng]
-                routingControl.setWaypoints(routeCoordinates.map(coord => L.latLng(coord[0], coord[1])));
+        // Geocodificar origen y destino
+        geocoder.geocode(originCity, (originResults) => {
+            if (originResults.length > 0) {
+                const originLatLng = originResults[0].center;
+
+                geocoder.geocode(destinationCity, (destinationResults) => {
+                    if (destinationResults.length > 0) {
+                        const destinationLatLng = destinationResults[0].center;
+
+                        // Configuración de la API de GraphHopper
+                        const apiKey = 'ea0313bf-ed8e-43de-a131-6b1d2fcde1ef';
+                        const url = `https://graphhopper.com/api/1/route?point=${originLatLng.lat},${originLatLng.lng}&point=${destinationLatLng.lat},${destinationLatLng.lng}&key=${apiKey}&vehicle=car&locale=es&instructions=true&calcPoints=true`;
+
+                        fetch(url)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.paths && data.paths.length > 0) {
+                                    const route = data.paths[0];
+                                    const routeCoordinates = route.points.coordinates.map(coord => [coord[1], coord[0]]);
+                                    routingControl.setWaypoints(routeCoordinates.map(coord => L.latLng(coord[0], coord[1])));
+                                } else {
+                                    console.error("No se encontró ninguna ruta:", data);
+                                    alert("No se encontró ninguna ruta. Asegúrate de ingresar ciudades válidas.");
+                                }
+                            })
+                            .catch(err => {
+                                console.error("Error al obtener la ruta: ", err);
+                                alert("Error al obtener la ruta. Por favor, revisa la conexión de red y la clave API.");
+                            });
+                    } else {
+                        alert("No se encontró la ubicación de destino. Asegúrate de escribir el nombre correctamente.");
+                    }
+                });
             } else {
-                alert("No se encontró ninguna ruta.");
+                alert("No se encontró la ubicación de origen. Asegúrate de escribir el nombre correctamente.");
             }
-        })
-        .catch(err => {
-            console.error("Error al obtener la ruta: ", err);
-            alert("Error al obtener la ruta. Verifica los nombres de las ciudades.");
         });
+    }
 }
 
 // Función para limpiar la ruta del mapa
@@ -60,7 +81,6 @@ function trackUserLocation() {
             (position) => {
                 const userLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
 
-                // Si el marcador circular del usuario no existe, lo creamos
                 if (!userMarker) {
                     userMarker = L.circleMarker(userLatLng, {
                         color: '#3388ff',
@@ -70,17 +90,11 @@ function trackUserLocation() {
                         fillOpacity: 0.6
                     }).addTo(map).bindPopup("Estás aquí");
                 } else {
-                    // Actualiza la posición del marcador circular
                     userMarker.setLatLng(userLatLng);
                 }
 
-                // Añadir la posición a la trayectoria del usuario
                 userPath.push(userLatLng);
-
-                // Centra el mapa en la posición del usuario
                 map.setView(userLatLng, 15);
-
-                // Dibuja la trayectoria del usuario en el mapa
                 L.polyline(userPath, { color: 'blue', weight: 3 }).addTo(map);
             },
             (error) => {
@@ -96,3 +110,7 @@ function trackUserLocation() {
 
 // Llama a la función para seguir la ubicación del usuario
 trackUserLocation();
+
+// Listeners para actualizar la ruta en tiempo real
+document.getElementById('origin').addEventListener('input', drawRoute);
+document.getElementById('destination').addEventListener('input', drawRoute);
