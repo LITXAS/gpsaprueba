@@ -1,30 +1,70 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapa de Rutas en Argentina</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Rutas - GraphHopper</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="container">
+        <h2>Buscador de Rutas</h2>
+        <div class="search-container">
+            <input type="text" id="start" placeholder="Punto de inicio" autocomplete="off">
+            <input type="text" id="end" placeholder="Destino" autocomplete="off">
+            <button onclick="findRoute()">Buscar Ruta</button>
+        </div>
+        <div id="map"></div>
+    </div>
 
-<div id="map"></div>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places"></script>
+    <script>
+        let map;
+        let directionsService;
+        let directionsRenderer;
 
-<!-- Panel de control de origen y destino -->
-<div class="controls">
-  <input type="text" id="origin" placeholder="Ciudad de origen o tu ubicación actual..." />
-  <input type="text" id="destination" placeholder="Ciudad de destino..." />
-  <button onclick="drawRoute()">Seleccionar Ruta</button>
-  <button onclick="clearMap()">Limpiar Mapa</button>
-</div>
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 7,
+                center: { lat: -34.397, lng: 150.644 },
+            });
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+            directionsRenderer.setMap(map);
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
-<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-<script src="script.js"></script>
+            // Autocompletar para los campos de inicio y destino
+            const startInput = document.getElementById("start");
+            const endInput = document.getElementById("end");
+            new google.maps.places.Autocomplete(startInput);
+            new google.maps.places.Autocomplete(endInput);
+        }
 
+        function findRoute() {
+            const start = document.getElementById("start").value;
+            const end = document.getElementById("end").value;
+
+            if (!start || !end) {
+                alert("Por favor ingresa ambos puntos para la ruta.");
+                return;
+            }
+
+            directionsService.route(
+                {
+                    origin: start,
+                    destination: end,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                },
+                (result, status) => {
+                    if (status === "OK") {
+                        directionsRenderer.setDirections(result);
+                    } else {
+                        alert("No se pudo encontrar una ruta: " + status);
+                    }
+                }
+            );
+        }
+
+        window.onload = initMap;
+    </script>
 </body>
 </html>
