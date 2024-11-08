@@ -51,14 +51,19 @@ function findRoute() {
     fetch(`https://graphhopper.com/api/1/route?point=${start}&point=${end}&vehicle=car&locale=es&key=ea0313bf-ed8e-43de-a131-6b1d2fcde1ef`)
         .then(response => response.json())
         .then(data => {
-            const routePoints = data.paths[0].points.coordinates;
-            const latLngs = routePoints.map(point => [point[1], point[0]]);
+            // Verificar si se obtuvo una ruta válida
+            if (data.paths && data.paths[0] && data.paths[0].points) {
+                const routePoints = data.paths[0].points.coordinates;
+                const latLngs = routePoints.map(point => [point[1], point[0]]);
 
-            // Dibujar la ruta en el mapa
-            L.polyline(latLngs, { color: 'blue', weight: 5 }).addTo(routeLayer);
+                // Dibujar la ruta en el mapa
+                L.polyline(latLngs, { color: 'blue', weight: 5 }).addTo(routeLayer);
 
-            // Ajustar la vista del mapa a la ruta
-            map.fitBounds(routeLayer.getBounds());
+                // Ajustar la vista del mapa a la ruta
+                map.fitBounds(routeLayer.getBounds());
+            } else {
+                throw new Error("La API no devolvió una ruta válida.");
+            }
         })
         .catch(error => {
             alert("No se pudo obtener la ruta: " + error.message);
