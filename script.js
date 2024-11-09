@@ -24,11 +24,16 @@ function initMap() {
                 fillOpacity: 0.7
             }).addTo(map).bindPopup("Estás aquí").openPopup();
 
-            // Inicializar el control de rutas con Leaflet Routing Machine
+            // Inicializar el control de rutas con GraphHopper como proveedor de rutas
             routingControl = L.Routing.control({
                 waypoints: [userLocation], // Usar la ubicación del usuario como primer waypoint
+                router: L.Routing.graphHopper('ea0313bf-ed8e-43de-a131-6b1d2fcde1ef', {
+                    urlParameters: {
+                        vehicle: 'car',
+                        locale: 'es'
+                    }
+                }),
                 routeWhileDragging: true,
-                geocoder: L.Control.Geocoder.nominatim(),
                 createMarker: function() { return null; } // Sin marcadores por defecto
             }).addTo(map);
 
