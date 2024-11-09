@@ -70,7 +70,7 @@ function findRoute(startCoords, endCoords) {
     routeLayer.clearLayers();
 
     // Usar la API de GraphHopper para obtener la ruta
-    fetch(`https://graphhopper.com/api/1/route?point=${startCoords[0]},${startCoords[1]}&point=${endCoords.lat},${endCoords.lng}&vehicle=car&locale=es&key=tu_api_key_aqui`)
+    fetch(`https://graphhopper.com/api/1/route?point=${startCoords[0]},${startCoords[1]}&point=${endCoords.lat},${endCoords.lng}&vehicle=car&locale=es&key=ea0313bf-ed8e-43de-a131-6b1d2fcde1ef`)
         .then(response => response.json())
         .then(data => {
             if (data.paths && data.paths[0] && data.paths[0].points) {
