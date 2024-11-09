@@ -1,31 +1,21 @@
 let map, routingControl, userLocation;
 
 function initMap() {
-    // Inicializar el mapa centrado en una ubicación general
-    map = L.map('map').setView([0, 0], 2);
-
-    // Añadir el mapa base
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    // Inicializar el control de rutas con Leaflet Routing Machine
-    routingControl = L.Routing.control({
-        waypoints: [],
-        routeWhileDragging: true,
-        geocoder: L.Control.Geocoder.nominatim(),
-        createMarker: function() { return null; } // Sin marcadores de ruta por defecto
-    }).addTo(map);
-
-    // Obtener la ubicación actual del usuario
+    // Verificar si la geolocalización está soportada
     if (navigator.geolocation) {
+        // Obtener la ubicación actual del usuario
         navigator.geolocation.getCurrentPosition(position => {
             const { latitude, longitude } = position.coords;
             userLocation = L.latLng(latitude, longitude);
 
-            // Centrar el mapa en la ubicación del usuario
-            map.setView(userLocation, 13);
+            // Inicializar el mapa centrado en la ubicación del usuario
+            map = L.map('map').setView(userLocation, 13);
+
+            // Añadir el mapa base
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
 
             // Crear un marcador circular para la ubicación del usuario
             L.circle(userLocation, {
@@ -34,9 +24,15 @@ function initMap() {
                 fillOpacity: 0.7
             }).addTo(map).bindPopup("Estás aquí").openPopup();
 
-            // Configurar el primer waypoint en la ubicación del usuario
-            routingControl.setWaypoints([userLocation]);
-        }, () => alert("No se pudo obtener tu ubicación."));
+            // Inicializar el control de rutas con Leaflet Routing Machine
+            routingControl = L.Routing.control({
+                waypoints: [userLocation], // Usar la ubicación del usuario como primer waypoint
+                routeWhileDragging: true,
+                geocoder: L.Control.Geocoder.nominatim(),
+                createMarker: function() { return null; } // Sin marcadores por defecto
+            }).addTo(map);
+
+        }, () => alert("No se pudo obtener tu ubicación. Verifica los permisos de geolocalización."));
     } else {
         alert("La geolocalización no está soportada en este navegador.");
     }
@@ -64,7 +60,7 @@ function searchRoute() {
 
         const endCoords = L.latLng(results[0].center.lat, results[0].center.lng);
 
-        // Configurar los waypoints con la ubicación del usuario y el destino
+        // Establecer los waypoints desde la ubicación del usuario hasta el destino
         routingControl.setWaypoints([userLocation, endCoords]);
     });
 }
