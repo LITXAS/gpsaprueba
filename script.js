@@ -13,19 +13,20 @@ function initMap() {
     // Inicializar el layer para la ruta
     routeLayer = L.layerGroup().addTo(map);
 
-    // Obtener la ubicación actual del usuario
+    // Obtener la ubicación actual del usuario y establecer el marcador de inicio
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(position => {
             const { latitude, longitude } = position.coords;
             map.setView([latitude, longitude], 13);
             
-            // Crear un marcador circular para la ubicación del usuario como el punto de partida fijo
+            // Crear un marcador circular para la ubicación del usuario como punto de partida
             startMarker = L.circleMarker([latitude, longitude], {
                 color: 'blue',
                 radius: 10
             }).addTo(map)
               .bindPopup("Estás aquí").openPopup();
             
+            // Almacenar la ubicación del usuario en el campo de inicio
             document.getElementById('start').value = `${latitude},${longitude}`;
         }, () => alert("No se pudo obtener tu ubicación."));
     }
@@ -48,10 +49,10 @@ function findRoute() {
     routeLayer.clearLayers();
     if (endMarker) endMarker.remove();
 
-    // Crear marcador para el destino
+    // Crear un marcador para el destino
     endMarker = L.marker(endCoords).addTo(map).bindPopup("Destino").openPopup();
 
-    // Usar la API de GraphHopper para obtener la ruta de ida (sin retorno)
+    // Usar la API de GraphHopper para obtener la ruta de ida
     fetch(`https://graphhopper.com/api/1/route?point=${start}&point=${end}&vehicle=car&locale=es&key=ea0313bf-ed8e-43de-a131-6b1d2fcde1ef`)
         .then(response => response.json())
         .then(data => {
@@ -60,7 +61,7 @@ function findRoute() {
                 const routePoints = data.paths[0].points.coordinates;
                 const latLngs = routePoints.map(point => [point[1], point[0]]);
 
-                // Dibujar la ruta de ida en el mapa
+                // Dibujar la ruta en el mapa
                 L.polyline(latLngs, { color: 'blue', weight: 5 }).addTo(routeLayer);
 
                 // Ajustar la vista del mapa a la ruta
@@ -74,4 +75,5 @@ function findRoute() {
         });
 }
 
+// Inicializar el mapa al cargar la página
 window.onload = initMap;
