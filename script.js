@@ -2,7 +2,7 @@ let map, startMarker, endMarker, routeLayer;
 
 function initMap() {
     // Inicializar el mapa centrado en una ubicación general
-    map = L.map('map').setView([0, 0], 2);
+    map = L.map('map').setView([40.416775, -3.703790], 6); // Centrado en España
 
     // Añadir el mapa base
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -12,27 +12,9 @@ function initMap() {
 
     // Inicializar el layer para la ruta
     routeLayer = L.layerGroup().addTo(map);
-
-    // Obtener la ubicación actual del usuario y establecer el marcador de inicio
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(position => {
-            const { latitude, longitude } = position.coords;
-            map.setView([latitude, longitude], 13);
-            
-            // Crear un marcador circular para la ubicación del usuario como punto de partida
-            startMarker = L.circleMarker([latitude, longitude], {
-                color: 'blue',
-                radius: 10
-            }).addTo(map)
-              .bindPopup("Estás aquí").openPopup();
-            
-            // Almacenar la ubicación del usuario en el campo de inicio
-            document.getElementById('start').value = `${latitude},${longitude}`;
-        }, () => alert("No se pudo obtener tu ubicación."));
-    }
 }
 
-function findRoute() {
+function searchRoute() {
     const start = document.getElementById('start').value;
     const end = document.getElementById('end').value;
 
@@ -41,22 +23,46 @@ function findRoute() {
         return;
     }
 
-    // Convertir la ubicación en coordenadas
-    const startCoords = start.split(',').map(Number);
-    const endCoords = end.split(',').map(Number);
+    // Geocodificar punto de inicio
+    L.Control.Geocoder.nominatim().geocode(start, startResults => {
+        if (startResults.length === 0) {
+            alert("No se encontró el punto de inicio.");
+            return;
+        }
 
-    // Limpiar la capa de rutas y el marcador de destino previo
+        const startCoords = startResults[0].center;
+
+        // Crear marcador de inicio
+        if (startMarker) startMarker.remove();
+        startMarker = L.marker(startCoords).addTo(map).bindPopup("Inicio").openPopup();
+
+        // Geocodificar destino
+        L.Control.Geocoder.nominatim().geocode(end, endResults => {
+            if (endResults.length === 0) {
+                alert("No se encontró el destino.");
+                return;
+            }
+
+            const endCoords = endResults[0].center;
+
+            // Crear marcador de destino
+            if (endMarker) endMarker.remove();
+            endMarker = L.marker(endCoords).addTo(map).bindPopup("Destino").openPopup();
+
+            // Obtener la ruta
+            findRoute(startCoords, endCoords);
+        });
+    });
+}
+
+function findRoute(startCoords, endCoords) {
+    // Limpiar capa de ruta
     routeLayer.clearLayers();
-    if (endMarker) endMarker.remove();
 
-    // Crear un marcador para el destino
-    endMarker = L.marker(endCoords).addTo(map).bindPopup("Destino").openPopup();
-
-    // Usar la API de GraphHopper para obtener la ruta de ida
-    fetch(`https://graphhopper.com/api/1/route?point=${start}&point=${end}&vehicle=car&locale=es&key=ea0313bf-ed8e-43de-a131-6b1d2fcde1ef`)
+    // Usar la API de GraphHopper para obtener la ruta
+    fetch(`https://graphhopper.com/api/1/route?point=${startCoords.lat},${startCoords.lng}&point=${endCoords.lat},${endCoords.lng}&vehicle=car&locale=es&key=tu_api_key_aqui`)
         .then(response => response.json())
         .then(data => {
-            // Verificar si se obtuvo una ruta válida
             if (data.paths && data.paths[0] && data.paths[0].points) {
                 const routePoints = data.paths[0].points.coordinates;
                 const latLngs = routePoints.map(point => [point[1], point[0]]);
