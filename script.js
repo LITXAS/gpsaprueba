@@ -19,7 +19,7 @@ function initMap() {
             const { latitude, longitude } = position.coords;
             map.setView([latitude, longitude], 13);
             
-            // Crear un marcador circular para la ubicación del usuario
+            // Crear un marcador circular para la ubicación del usuario como el punto de partida fijo
             startMarker = L.circleMarker([latitude, longitude], {
                 color: 'blue',
                 radius: 10
@@ -44,19 +44,14 @@ function findRoute() {
     const startCoords = start.split(',').map(Number);
     const endCoords = end.split(',').map(Number);
 
-    // Limpiar la capa de rutas y los marcadores previos
+    // Limpiar la capa de rutas y el marcador de destino previo
     routeLayer.clearLayers();
-    if (startMarker) startMarker.remove();
     if (endMarker) endMarker.remove();
 
-    // Crear marcadores para inicio y fin
-    startMarker = L.circleMarker(startCoords, {
-        color: 'blue',
-        radius: 10
-    }).addTo(map).bindPopup("Inicio").openPopup();
+    // Crear marcador para el destino
     endMarker = L.marker(endCoords).addTo(map).bindPopup("Destino").openPopup();
 
-    // Usar la API de GraphHopper para obtener la ruta
+    // Usar la API de GraphHopper para obtener la ruta de ida (sin retorno)
     fetch(`https://graphhopper.com/api/1/route?point=${start}&point=${end}&vehicle=car&locale=es&key=ea0313bf-ed8e-43de-a131-6b1d2fcde1ef`)
         .then(response => response.json())
         .then(data => {
@@ -65,7 +60,7 @@ function findRoute() {
                 const routePoints = data.paths[0].points.coordinates;
                 const latLngs = routePoints.map(point => [point[1], point[0]]);
 
-                // Dibujar la ruta en el mapa
+                // Dibujar la ruta de ida en el mapa
                 L.polyline(latLngs, { color: 'blue', weight: 5 }).addTo(routeLayer);
 
                 // Ajustar la vista del mapa a la ruta
