@@ -60,6 +60,10 @@ function searchRoute() {
         if (endMarker) endMarker.remove();
         endMarker = L.marker(endCoords).addTo(map).bindPopup("Destino").openPopup();
 
+        // Imprimir coordenadas para verificación
+        console.log("Coordenadas de inicio:", userLocation);
+        console.log("Coordenadas de destino:", endCoords);
+
         // Obtener la ruta
         findRoute(userLocation, endCoords);
     });
@@ -69,10 +73,18 @@ function findRoute(startCoords, endCoords) {
     // Limpiar capa de ruta
     routeLayer.clearLayers();
 
+    // URL de la API de GraphHopper con coordenadas y clave API
+    const url = `https://graphhopper.com/api/1/route?point=${startCoords[0]},${startCoords[1]}&point=${endCoords.lat},${endCoords.lng}&vehicle=car&locale=es&key=ea0313bf-ed8e-43de-a131-6b1d2fcde1ef`;
+    
+    console.log("URL de la solicitud:", url); // Para verificar la solicitud que se envía
+
     // Usar la API de GraphHopper para obtener la ruta
-    fetch(`https://graphhopper.com/api/1/route?point=${startCoords[0]},${startCoords[1]}&point=${endCoords.lat},${endCoords.lng}&vehicle=car&locale=es&key=ea0313bf-ed8e-43de-a131-6b1d2fcde1ef`)
+    fetch(url)
         .then(response => response.json())
         .then(data => {
+            console.log("Respuesta de la API:", data); // Ver la respuesta completa para identificar problemas
+
+            // Verificar si la API devolvió una ruta válida
             if (data.paths && data.paths[0] && data.paths[0].points) {
                 const routePoints = data.paths[0].points.coordinates;
                 const latLngs = routePoints.map(point => [point[1], point[0]]);
@@ -82,14 +94,19 @@ function findRoute(startCoords, endCoords) {
 
                 // Ajustar la vista del mapa a la ruta
                 map.fitBounds(routeLayer.getBounds());
+            } else if (data.message) {
+                // Si hay un mensaje de error en la respuesta de la API
+                throw new Error(data.message);
             } else {
                 throw new Error("La API no devolvió una ruta válida.");
             }
         })
         .catch(error => {
+            console.error("Error al obtener la ruta:", error);
             alert("No se pudo obtener la ruta: " + error.message);
         });
 }
 
 // Inicializar el mapa al cargar la página
 window.onload = initMap;
+
