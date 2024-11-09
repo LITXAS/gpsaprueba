@@ -1,4 +1,4 @@
-let map, routingControl;
+let map, routingControl, userLocation;
 
 function initMap() {
     // Inicializar el mapa centrado en una ubicación general
@@ -22,15 +22,15 @@ function initMap() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(position => {
             const { latitude, longitude } = position.coords;
-            const userLocation = L.latLng(latitude, longitude);
+            userLocation = L.latLng(latitude, longitude);
 
             // Centrar el mapa en la ubicación del usuario
             map.setView(userLocation, 13);
 
-            // Crear un círculo pequeño en la ubicación del usuario
+            // Crear un marcador circular para la ubicación del usuario
             L.circle(userLocation, {
                 color: 'red',
-                radius: 10,
+                radius: 10, // Radio reducido para mejorar precisión visual
                 fillOpacity: 0.7
             }).addTo(map).bindPopup("Estás aquí").openPopup();
 
@@ -44,6 +44,11 @@ function initMap() {
 
 function searchRoute() {
     const destination = document.getElementById('destination').value;
+
+    if (!userLocation) {
+        alert("No se ha detectado tu ubicación.");
+        return;
+    }
 
     if (!destination) {
         alert("Por favor, ingresa el destino.");
@@ -59,8 +64,8 @@ function searchRoute() {
 
         const endCoords = L.latLng(results[0].center.lat, results[0].center.lng);
 
-        // Añadir el destino a los waypoints para trazar la ruta
-        routingControl.spliceWaypoints(routingControl.getWaypoints().length - 1, 1, endCoords);
+        // Configurar los waypoints con la ubicación del usuario y el destino
+        routingControl.setWaypoints([userLocation, endCoords]);
     });
 }
 
