@@ -22,11 +22,11 @@ function initMap() {
             // Centrar el mapa en la ubicación del usuario
             map.setView(userLocation, 13);
 
-            // Crear un círculo rojo en la ubicación del usuario
+            // Crear un círculo pequeño en la ubicación del usuario
             L.circle(userLocation, {
                 color: 'red',
-                radius: 50,
-                fillOpacity: 0.5
+                radius: 10,  // Radio reducido para mejorar precisión visual
+                fillOpacity: 0.7
             }).addTo(map).bindPopup("Estás aquí").openPopup();
         }, () => alert("No se pudo obtener tu ubicación."));
     } else {
@@ -93,4 +93,3 @@ function findRoute(startCoords, endCoords) {
 
 // Inicializar el mapa al cargar la página
 window.onload = initMap;
-
