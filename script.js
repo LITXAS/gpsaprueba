@@ -18,8 +18,14 @@ function initMap() {
         navigator.geolocation.getCurrentPosition(position => {
             const { latitude, longitude } = position.coords;
             map.setView([latitude, longitude], 13);
-            startMarker = L.marker([latitude, longitude]).addTo(map)
-                .bindPopup("Estás aquí").openPopup();
+            
+            // Crear un marcador circular para la ubicación del usuario
+            startMarker = L.circleMarker([latitude, longitude], {
+                color: 'blue',
+                radius: 10
+            }).addTo(map)
+              .bindPopup("Estás aquí").openPopup();
+            
             document.getElementById('start').value = `${latitude},${longitude}`;
         }, () => alert("No se pudo obtener tu ubicación."));
     }
@@ -44,7 +50,10 @@ function findRoute() {
     if (endMarker) endMarker.remove();
 
     // Crear marcadores para inicio y fin
-    startMarker = L.marker(startCoords).addTo(map).bindPopup("Inicio").openPopup();
+    startMarker = L.circleMarker(startCoords, {
+        color: 'blue',
+        radius: 10
+    }).addTo(map).bindPopup("Inicio").openPopup();
     endMarker = L.marker(endCoords).addTo(map).bindPopup("Destino").openPopup();
 
     // Usar la API de GraphHopper para obtener la ruta
