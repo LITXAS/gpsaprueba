@@ -20,13 +20,12 @@ function initMap() {
             // Crear un marcador circular para la ubicación del usuario
             userCircle = L.circle(userLocation, {
                 color: 'red',
-                radius: 10, // Radio reducido para mejorar precisión visual
+                radius: 10,
                 fillOpacity: 0.7
             }).addTo(map).bindPopup("Estás aquí").openPopup();
 
-            // Inicializar el control de rutas con GraphHopper como proveedor de rutas
+            // Inicializar el control de rutas sin waypoints
             routingControl = L.Routing.control({
-                waypoints: [userLocation], // Usar la ubicación del usuario como primer waypoint
                 router: L.Routing.graphHopper('ea0313bf-ed8e-43de-a131-6b1d2fcde1ef', {
                     urlParameters: {
                         vehicle: 'car',
@@ -55,8 +54,11 @@ function updateUserLocation(position) {
     userCircle.setLatLng(newLocation);
     map.setView(newLocation);
 
-    // Actualizar el primer waypoint del control de rutas
-    if (routingControl) {
+    // Actualizar la ubicación del usuario
+    userLocation = newLocation;
+
+    // Actualizar el primer waypoint del control de rutas si ya hay una ruta en curso
+    if (routingControl.getWaypoints().length > 1) {
         const waypoints = routingControl.getWaypoints();
         waypoints[0].latLng = newLocation;
         routingControl.setWaypoints(waypoints);
@@ -85,7 +87,7 @@ function searchRoute() {
 
         const endCoords = L.latLng(results[0].center.lat, results[0].center.lng);
 
-        // Establecer los waypoints desde la ubicación del usuario hasta el destino
+        // Establecer los waypoints desde la ubicación actual del usuario hasta el destino
         routingControl.setWaypoints([userLocation, endCoords]);
     });
 }
