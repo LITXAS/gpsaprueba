@@ -1,7 +1,9 @@
 let map, routingControl, userLocation, userCircle;
 
 function initMap() {
+    // Verificar si la geolocalización está soportada
     if (navigator.geolocation) {
+        // Obtener la ubicación inicial del usuario
         navigator.geolocation.getCurrentPosition(position => {
             const { latitude, longitude } = position.coords;
             userLocation = L.latLng(latitude, longitude);
@@ -22,11 +24,15 @@ function initMap() {
                 fillOpacity: 0.7
             }).addTo(map).bindPopup("Estás aquí").openPopup();
 
-            // Inicializar el control de rutas
+            // Inicializar el control de rutas sin waypoints al inicio
             routingControl = L.Routing.control({
-                waypoints: [],
+                router: L.Routing.graphHopper('ea0313bf-ed8e-43de-a131-6b1d2fcde1ef', {
+                    urlParameters: {
+                        vehicle: 'car',
+                        locale: 'es'
+                    }
+                }),
                 routeWhileDragging: true,
-                show: false,
                 createMarker: function() { return null; } // Sin marcadores por defecto
             }).addTo(map);
 
@@ -72,7 +78,7 @@ function searchRoute() {
         return;
     }
 
-    // Geocodificar el destino usando Nominatim
+    // Geocodificar el destino
     L.Control.Geocoder.nominatim().geocode(destination, results => {
         if (results.length === 0) {
             alert("No se encontró el destino.");
@@ -81,53 +87,13 @@ function searchRoute() {
 
         const endCoords = L.latLng(results[0].center.lat, results[0].center.lng);
 
-        // API de GraphHopper para obtener instrucciones detalladas
-        const apiKey = 'ea0313bf-ed8e-43de-a131-6b1d2fcde1ef';
-    const url = `https://graphhopper.com/api/1/route?point=${origin}&point=${destination}&key=${apiKey}&vehicle=car&locale=es&instructions=true&calcPoints=true`;
-        
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                if (data.paths && data.paths.length > 0) {
-                    const route = data.paths[0];
-                    const routeCoordinates = route.points.coordinates.map(coord => [coord[1], coord[0]]);
+        // Establecer los waypoints desde la ubicación actual del usuario hasta el destino
+        routingControl.setWaypoints([userLocation, endCoords]);
 
-                    // Configurar los waypoints de la ruta en el control de rutas
-                    routingControl.setWaypoints([userLocation, endCoords]);
-
-                    // Mostrar instrucciones paso a paso
-                    displayRouteInstructions(route.instructions);
-                } else {
-                    alert("No se encontró ninguna ruta.");
-                }
-            })
-            .catch(err => {
-                console.error("Error al obtener la ruta: ", err);
-                alert("Error al obtener la ruta. Verifica los nombres de las ciudades.");
-            });
+        // Verificar que los waypoints se establecieron correctamente
+        console.log("Waypoints establecidos:", routingControl.getWaypoints());
     });
-}
-
-// Función para mostrar las instrucciones paso a paso
-function displayRouteInstructions(instructions) {
-    const instructionsContainer = document.getElementById('instructions');
-    instructionsContainer.innerHTML = ''; // Limpiar instrucciones previas
-
-    instructions.forEach((instruction, index) => {
-        const step = document.createElement('div');
-        step.innerHTML = `${index + 1}. ${instruction.text} - ${instruction.distance.toFixed(0)} m`;
-        instructionsContainer.appendChild(step);
-    });
-
-    // Mostrar el contenedor de instrucciones
-    instructionsContainer.style.display = 'block';
-}
-
-// Función para limpiar el mapa
-function clearMap() {
-    routingControl.setWaypoints([]);
-    document.getElementById('instructions').style.display = 'none';
 }
 
 // Inicializar el mapa al cargar la página
-window.onload = initMap;
+window.onload = initMap;
