@@ -95,5 +95,10 @@ function searchRoute() {
     });
 }
 
+// Función para limpiar el mapa
+function clearMap() {
+    routingControl.setWaypoints([]);
+}
+
 // Inicializar el mapa al cargar la página
-window.onload = initMap;
+window.onload = initMap;
