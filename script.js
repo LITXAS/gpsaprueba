@@ -1,9 +1,9 @@
-let map, routingControl, userLocation;
+let map, routingControl, userLocation, userCircle;
 
 function initMap() {
     // Verificar si la geolocalización está soportada
     if (navigator.geolocation) {
-        // Obtener la ubicación actual del usuario
+        // Obtener la ubicación inicial del usuario
         navigator.geolocation.getCurrentPosition(position => {
             const { latitude, longitude } = position.coords;
             userLocation = L.latLng(latitude, longitude);
@@ -18,7 +18,7 @@ function initMap() {
             }).addTo(map);
 
             // Crear un marcador circular para la ubicación del usuario
-            L.circle(userLocation, {
+            userCircle = L.circle(userLocation, {
                 color: 'red',
                 radius: 10, // Radio reducido para mejorar precisión visual
                 fillOpacity: 0.7
@@ -37,9 +37,29 @@ function initMap() {
                 createMarker: function() { return null; } // Sin marcadores por defecto
             }).addTo(map);
 
-        }, () => alert("No se pudo obtener tu ubicación. Verifica los permisos de geolocalización."));
+            // Rastrear la ubicación en tiempo real del usuario y actualizar el círculo
+            navigator.geolocation.watchPosition(updateUserLocation, 
+                () => alert("No se pudo obtener tu ubicación en tiempo real."));
+        }, 
+        () => alert("No se pudo obtener tu ubicación inicial. Verifica los permisos de geolocalización."));
     } else {
         alert("La geolocalización no está soportada en este navegador.");
+    }
+}
+
+function updateUserLocation(position) {
+    const { latitude, longitude } = position.coords;
+    const newLocation = L.latLng(latitude, longitude);
+
+    // Actualizar la posición del círculo y el mapa
+    userCircle.setLatLng(newLocation);
+    map.setView(newLocation);
+
+    // Actualizar el primer waypoint del control de rutas
+    if (routingControl) {
+        const waypoints = routingControl.getWaypoints();
+        waypoints[0].latLng = newLocation;
+        routingControl.setWaypoints(waypoints);
     }
 }
 
