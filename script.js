@@ -1,99 +1,44 @@
-let map, routingControl, userLocation, userCircle;
+const map = L.map('map').setView([-38.4161, -63.6167], 5); // Centra el mapa en Argentina
 
-function initMap() {
-    // Verificar si la geolocalización está soportada
-    if (navigator.geolocation) {
-        // Obtener la ubicación inicial del usuario
-        navigator.geolocation.getCurrentPosition(position => {
-            const { latitude, longitude } = position.coords;
-            userLocation = L.latLng(latitude, longitude);
+// Capa de mapa base
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+}).addTo(map);
 
-            // Inicializar el mapa centrado en la ubicación del usuario
-            map = L.map('map').setView(userLocation, 13);
+// Configuración de la capa de enrutamiento sin dependencia de API
+const routingControl = L.Routing.control({
+    waypoints: [],
+    routeWhileDragging: true,
+    createMarker: function() { return null; } // No crear marcadores por defecto
+}).addTo(map);
 
-            // Añadir el mapa base
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 18,
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+// Función para establecer los puntos de origen y destino en el mapa
+function setRoutePoints() {
+    const originInput = document.getElementById('origin').value;
+    const destinationInput = document.getElementById('destination').value;
 
-            // Crear un marcador circular para la ubicación del usuario
-            userCircle = L.circle(userLocation, {
-                color: 'red',
-                radius: 10,
-                fillOpacity: 0.7
-            }).addTo(map).bindPopup("Estás aquí").openPopup();
+    if (!originInput || !destinationInput) {
+        alert("Por favor ingresa ambos puntos: origen y destino.");
+        return;
+    }
 
-            // Inicializar el control de rutas sin waypoints al inicio
-            routingControl = L.Routing.control({
-                router: L.Routing.graphHopper('ea0313bf-ed8e-43de-a131-6b1d2fcde1ef', {
-                    urlParameters: {
-                        vehicle: 'car',
-                        locale: 'es'
-                    }
-                }),
-                routeWhileDragging: true,
-                createMarker: function() { return null; } // Sin marcadores por defecto
-            }).addTo(map);
+    // Convertir las ubicaciones a latitudes y longitudes ingresadas en formato "lat,lng" por el usuario
+    const originCoords = originInput.split(',').map(Number);
+    const destinationCoords = destinationInput.split(',').map(Number);
 
-            // Rastrear la ubicación en tiempo real del usuario y actualizar el círculo
-            navigator.geolocation.watchPosition(updateUserLocation, 
-                () => alert("No se pudo obtener tu ubicación en tiempo real."));
-        }, 
-        () => alert("No se pudo obtener tu ubicación inicial. Verifica los permisos de geolocalización."));
+    if (originCoords.length === 2 && destinationCoords.length === 2) {
+        const origin = L.latLng(originCoords[0], originCoords[1]);
+        const destination = L.latLng(destinationCoords[0], destinationCoords[1]);
+
+        // Configurar los waypoints en el mapa
+        routingControl.setWaypoints([origin, destination]);
     } else {
-        alert("La geolocalización no está soportada en este navegador.");
+        alert("Formato incorrecto. Ingresa coordenadas en formato 'lat,lng' para ambas ubicaciones.");
     }
 }
 
-function updateUserLocation(position) {
-    const { latitude, longitude } = position.coords;
-    const newLocation = L.latLng(latitude, longitude);
-
-    // Actualizar la posición del círculo y el mapa
-    userCircle.setLatLng(newLocation);
-    map.setView(newLocation);
-
-    // Actualizar la ubicación del usuario
-    userLocation = newLocation;
-
-    // Actualizar el primer waypoint del control de rutas si ya hay una ruta en curso
-    if (routingControl.getWaypoints().length > 1) {
-        const waypoints = routingControl.getWaypoints();
-        waypoints[0].latLng = newLocation;
-        routingControl.setWaypoints(waypoints);
-    }
+// Función para limpiar los puntos de ruta en el mapa
+function clearMap() {
+    routingControl.setWaypoints([]);
 }
-
-function searchRoute() {
-    const destination = document.getElementById('destination').value;
-
-    if (!userLocation) {
-        alert("No se ha detectado tu ubicación.");
-        return;
-    }
-
-    if (!destination) {
-        alert("Por favor, ingresa el destino.");
-        return;
-    }
-
-    // Geocodificar el destino
-    L.Control.Geocoder.nominatim().geocode(destination, results => {
-        if (results.length === 0) {
-            alert("No se encontró el destino.");
-            return;
-        }
-
-        const endCoords = L.latLng(results[0].center.lat, results[0].center.lng);
-
-        // Establecer los waypoints desde la ubicación actual del usuario hasta el destino
-        routingControl.setWaypoints([userLocation, endCoords]);
-
-        // Verificar que los waypoints se establecieron correctamente
-        console.log("Waypoints establecidos:", routingControl.getWaypoints());
-    });
-}
-
-// Inicializar el mapa al cargar la página
-window.onload = initMap;
