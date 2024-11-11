@@ -1,28 +1,24 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapa de Rutas en Argentina</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Rutas con Leaflet y Geolocalización</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 </head>
 <body>
+    <div class="container">
+        <h2>Buscador de Rutas</h2>
+        <div class="search-container">
+            <input type="text" id="end" placeholder="Destino (Ej. Barcelona)">
+            <button onclick="searchRoute()">Buscar Ruta</button>
+        </div>
+        <div id="map"></div>
+    </div>
 
-<div id="map"></div>
-
-<div class="controls">
-  <input type="text" id="destination" placeholder="Ciudad de destino..." />
-  <button onclick="searchRoute()">Trazar Ruta</button>
-  <button onclick="clearMap()">Limpiar Mapa</button>
-</div>
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
-<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-<script src="script.js"></script>
-
+    <script src="script.js"></script>
 </body>
 </html>
