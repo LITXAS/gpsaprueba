@@ -24,7 +24,7 @@ function initMap() {
                 fillOpacity: 0.7
             }).addTo(map).bindPopup("Estás aquí").openPopup();
 
-            // Inicializar el control de rutas sin waypoints
+            // Inicializar el control de rutas sin waypoints al inicio
             routingControl = L.Routing.control({
                 router: L.Routing.graphHopper('ea0313bf-ed8e-43de-a131-6b1d2fcde1ef', {
                     urlParameters: {
@@ -89,6 +89,9 @@ function searchRoute() {
 
         // Establecer los waypoints desde la ubicación actual del usuario hasta el destino
         routingControl.setWaypoints([userLocation, endCoords]);
+
+        // Verificar que los waypoints se establecieron correctamente
+        console.log("Waypoints establecidos:", routingControl.getWaypoints());
     });
 }
 
