@@ -1,30 +1,24 @@
 let map, routingControl, userLocation, userCircle;
 
 function initMap() {
-    // Verificar si la geolocalización está soportada
     if (navigator.geolocation) {
-        // Obtener la ubicación inicial del usuario
         navigator.geolocation.getCurrentPosition(position => {
             const { latitude, longitude } = position.coords;
             userLocation = L.latLng(latitude, longitude);
 
-            // Inicializar el mapa centrado en la ubicación del usuario
             map = L.map('map').setView(userLocation, 13);
 
-            // Añadir el mapa base
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 18,
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
-            // Crear un marcador circular para la ubicación del usuario
             userCircle = L.circle(userLocation, {
                 color: 'red',
                 radius: 10,
                 fillOpacity: 0.7
             }).addTo(map).bindPopup("Estás aquí").openPopup();
 
-            // Inicializar el control de rutas sin waypoints al inicio
             routingControl = L.Routing.control({
                 router: L.Routing.graphHopper('ea0313bf-ed8e-43de-a131-6b1d2fcde1ef', {
                     urlParameters: {
@@ -33,10 +27,9 @@ function initMap() {
                     }
                 }),
                 routeWhileDragging: true,
-                createMarker: function() { return null; } // Sin marcadores por defecto
+                createMarker: function() { return null; }
             }).addTo(map);
 
-            // Rastrear la ubicación en tiempo real del usuario y actualizar el círculo
             navigator.geolocation.watchPosition(updateUserLocation, 
                 () => alert("No se pudo obtener tu ubicación en tiempo real."));
         }, 
@@ -50,14 +43,10 @@ function updateUserLocation(position) {
     const { latitude, longitude } = position.coords;
     const newLocation = L.latLng(latitude, longitude);
 
-    // Actualizar la posición del círculo y el mapa
     userCircle.setLatLng(newLocation);
     map.setView(newLocation);
-
-    // Actualizar la ubicación del usuario
     userLocation = newLocation;
 
-    // Actualizar el primer waypoint del control de rutas si ya hay una ruta en curso
     if (routingControl.getWaypoints().length > 1) {
         const waypoints = routingControl.getWaypoints();
         waypoints[0].latLng = newLocation;
@@ -78,20 +67,37 @@ function searchRoute() {
         return;
     }
 
-    // Geocodificar el destino
+    // Llamar a la API de Nominatim para obtener todas las coincidencias
     L.Control.Geocoder.nominatim().geocode(destination, results => {
         if (results.length === 0) {
             alert("No se encontró el destino.");
             return;
         }
 
-        const endCoords = L.latLng(results[0].center.lat, results[0].center.lng);
+        // Crear un menú desplegable con las coincidencias de resultados
+        const dropdown = document.getElementById('dropdown');
+        dropdown.innerHTML = ''; // Limpiar opciones previas
 
-        // Establecer los waypoints desde la ubicación actual del usuario hasta el destino
-        routingControl.setWaypoints([userLocation, endCoords]);
+        results.forEach((result, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = `${result.name}, ${result.properties.display_name}`;
+            dropdown.appendChild(option);
+        });
 
-        // Verificar que los waypoints se establecieron correctamente
-        console.log("Waypoints establecidos:", routingControl.getWaypoints());
+        // Mostrar el menú desplegable
+        dropdown.style.display = 'block';
+
+        // Manejar la selección del usuario
+        dropdown.onchange = function () {
+            const selectedIndex = dropdown.value;
+            const endCoords = L.latLng(results[selectedIndex].center.lat, results[selectedIndex].center.lng);
+
+            routingControl.setWaypoints([userLocation, endCoords]);
+
+            // Ocultar el menú después de la selección
+            dropdown.style.display = 'none';
+        };
     });
 }
 
