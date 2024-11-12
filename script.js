@@ -29,7 +29,8 @@ function initMap() {
                 router: L.Routing.graphHopper('ea0313bf-ed8e-43de-a131-6b1d2fcde1ef', {
                     urlParameters: {
                         vehicle: 'car',
-                        locale: 'es'
+                        locale: 'es',
+                        alternative_route_max_paths: 3 // Solicitar rutas alternativas
                     }
                 }),
                 routeWhileDragging: true,
@@ -96,4 +97,4 @@ function searchRoute() {
 }
 
 // Inicializar el mapa al cargar la página
-window.onload = initMap;
+window.onload = initMap;
