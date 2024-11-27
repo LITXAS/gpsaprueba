@@ -1,4 +1,4 @@
-let map, userLocation, userCircle, routePolyline;
+let map, userLocation, userCircle, routePolyline, destinationMarker;
 
 function initMap() {
     // Inicializar el mapa centrado en Argentina
@@ -70,6 +70,16 @@ function searchRoute() {
             }
 
             console.log("Destino geocodificado:", destCoords); // Depuración: Ver las coordenadas obtenidas
+
+            // Si ya existe un marcador de destino, lo eliminamos antes de agregar el nuevo
+            if (destinationMarker) {
+                map.removeLayer(destinationMarker);
+            }
+
+            // Colocar un pin en el lugar de destino
+            destinationMarker = L.marker([destCoords.lat, destCoords.lng]).addTo(map)
+                .bindPopup("Destino: " + destination)
+                .openPopup();
 
             // API key de GraphHopper
             const apiKey = 'ea0313bf-ed8e-43de-a131-6b1d2fcde1ef';
