@@ -69,6 +69,8 @@ function searchRoute() {
                 return;
             }
 
+            console.log("Destino geocodificado:", destCoords); // Depuración: Ver las coordenadas obtenidas
+
             // API key de GraphHopper
             const apiKey = 'ea0313bf-ed8e-43de-a131-6b1d2fcde1ef';
             const url = `https://graphhopper.com/api/1/route?point=${userLocation.lat},${userLocation.lng}&point=${destCoords.lat},${destCoords.lng}&key=${apiKey}&vehicle=car&locale=es&instructions=false`;
