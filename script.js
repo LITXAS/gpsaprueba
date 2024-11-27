@@ -23,7 +23,7 @@ function initMap() {
                 fillOpacity: 0.7
             }).addTo(map).bindPopup("Estás aquí").openPopup();
 
-            // Inicializar el control de rutas con estilos personalizados
+            // Inicializar el control de rutas con una línea roja
             routingControl = L.Routing.control({
                 router: L.Routing.graphHopper('ea0313bf-ed8e-43de-a131-6b1d2fcde1ef', {
                     urlParameters: {
@@ -31,10 +31,10 @@ function initMap() {
                         locale: 'es'
                     }
                 }),
-                routeWhileDragging: false,
-                addWaypoints: true, // Permitir agregar waypoints dinámicos
+                routeWhileDragging: false, // No permitir arrastrar la ruta
+                addWaypoints: false, // Solo permitir inicio y destino
                 lineOptions: {
-                    styles: [{ color: 'blue', opacity: 0.7, weight: 5 }] // Línea azul personalizada
+                    styles: [{ color: 'red', opacity: 0.8, weight: 6 }] // Línea roja personalizada
                 },
                 createMarker: function() { return null; } // Sin marcadores por defecto
             }).addTo(map);
