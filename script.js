@@ -88,6 +88,9 @@ function searchRoute() {
 
         const endCoords = L.latLng(results[0].center.lat, results[0].center.lng);
 
+        // Marcar el destino en el mapa (opcional)
+        L.marker(endCoords).addTo(map).bindPopup("Destino").openPopup();
+
         // Establecer los waypoints desde la ubicación actual del usuario hasta el destino
         routingControl.setWaypoints([userLocation, endCoords]);
 
