@@ -27,11 +27,11 @@ function updateUserLocation(position) {
     userLocation = L.latLng(latitude, longitude);
 
     if (!userCircle) {
-        // Crear un marcador y un círculo en la ubicación del usuario
+        // Crear un marcador pequeño (radio mínimo) para la ubicación del usuario
         userCircle = L.circle(userLocation, {
             color: 'blue',
-            radius: 50,
-            fillOpacity: 0.3
+            radius: 10, // Hacer el círculo más pequeño posible
+            fillOpacity: 0.7
         }).addTo(map).bindPopup("Estás aquí").openPopup();
 
         // Centrar el mapa en la ubicación del usuario
@@ -39,7 +39,7 @@ function updateUserLocation(position) {
     } else {
         // Actualizar la posición del círculo
         userCircle.setLatLng(userLocation);
-        map.setView(userLocation, 13);
+        map.setView(userLocation, 13); // Centrar el mapa en la nueva ubicación
     }
 }
 
