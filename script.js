@@ -85,6 +85,8 @@ function searchRoute() {
             const apiKey = 'ea0313bf-ed8e-43de-a131-6b1d2fcde1ef';
             const url = `https://graphhopper.com/api/1/route?point=${userLocation.lat},${userLocation.lng}&point=${destCoords.lat},${destCoords.lng}&key=${apiKey}&vehicle=car&locale=es&instructions=false`;
 
+            console.log("URL de la solicitud a GraphHopper:", url); // Depuración: Ver la URL de la solicitud
+
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
