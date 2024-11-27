@@ -3,7 +3,6 @@ let map, routingControl, userLocation, userCircle;
 function initMap() {
     // Verificar si la geolocalización está soportada
     if (navigator.geolocation) {
-        // Obtener la ubicación inicial del usuario
         navigator.geolocation.getCurrentPosition(position => {
             const { latitude, longitude } = position.coords;
             userLocation = L.latLng(latitude, longitude);
@@ -24,16 +23,19 @@ function initMap() {
                 fillOpacity: 0.7
             }).addTo(map).bindPopup("Estás aquí").openPopup();
 
-            // Inicializar el control de rutas sin waypoints al inicio
+            // Inicializar el control de rutas con estilos personalizados
             routingControl = L.Routing.control({
                 router: L.Routing.graphHopper('ea0313bf-ed8e-43de-a131-6b1d2fcde1ef', {
                     urlParameters: {
                         vehicle: 'car',
-                        locale: 'es',
-                        alternative_route_max_paths: 3 // Solicitar rutas alternativas
+                        locale: 'es'
                     }
                 }),
-                routeWhileDragging: true,
+                routeWhileDragging: false,
+                addWaypoints: true, // Permitir agregar waypoints dinámicos
+                lineOptions: {
+                    styles: [{ color: 'blue', opacity: 0.7, weight: 5 }] // Línea azul personalizada
+                },
                 createMarker: function() { return null; } // Sin marcadores por defecto
             }).addTo(map);
 
