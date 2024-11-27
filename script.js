@@ -2,7 +2,11 @@ let map, userLocation, userCircle, routePolyline, destinationMarker;
 
 function initMap() {
     // Inicializar el mapa centrado en Argentina
-    map = L.map('map').setView([-38.4161, -63.6167], 5); // Coordenadas de Argentina
+    map = L.map('map', {
+        center: [-38.4161, -63.6167],  // Coordenadas de Argentina por defecto
+        zoom: 5,                       // Nivel de zoom por defecto
+        zoomControl: true               // Control de zoom habilitado
+    });
 
     // Añadir capa base
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -20,6 +24,12 @@ function initMap() {
     } else {
         alert("La geolocalización no está soportada en este navegador.");
     }
+
+    // Desactivar la opción para que el mapa ajuste automáticamente el zoom después de hacer una ruta
+    map.on('zoomend', function() {
+        // Aquí puedes guardar el zoom actual para mantenerlo durante el uso
+        // Si necesitas guardar o manejar el zoom en algún lado, puedes hacer algo con map.getZoom()
+    });
 }
 
 function updateUserLocation(position) {
@@ -34,12 +44,12 @@ function updateUserLocation(position) {
             fillOpacity: 0.7
         }).addTo(map).bindPopup("Estás aquí").openPopup();
 
-        // Centrar el mapa en la ubicación del usuario
-        map.setView(userLocation, 13);
+        // Centrar el mapa en la ubicación del usuario (el usuario puede cambiar el zoom manualmente)
+        map.setView(userLocation, map.getZoom());
     } else {
-        // Actualizar la posición del círculo
+        // Actualizar la posición del círculo y la vista
         userCircle.setLatLng(userLocation);
-        map.setView(userLocation, 13); // Centrar el mapa en la nueva ubicación
+        map.setView(userLocation, map.getZoom()); // Mantener el nivel de zoom
     }
 }
 
@@ -85,8 +95,6 @@ function searchRoute() {
             const apiKey = 'ea0313bf-ed8e-43de-a131-6b1d2fcde1ef';
             const url = `https://graphhopper.com/api/1/route?point=${userLocation.lat},${userLocation.lng}&point=${destCoords.lat},${destCoords.lng}&key=${apiKey}&vehicle=car&locale=es&instructions=false`;
 
-            console.log("URL de la solicitud a GraphHopper:", url); // Depuración: Ver la URL de la solicitud
-
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
@@ -106,8 +114,8 @@ function searchRoute() {
                             opacity: 0.8
                         }).addTo(map);
 
-                        // Ajustar la vista del mapa para incluir toda la ruta
-                        map.fitBounds(routePolyline.getBounds());
+                        // Ajustar la vista del mapa para incluir toda la ruta (pero sin cambiar el zoom automáticamente)
+                        map.fitBounds(routePolyline.getBounds(), { animate: true, duration: 1 });
                     } else {
                         alert("No se encontró ninguna ruta.");
                     }
