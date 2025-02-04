@@ -3,9 +3,9 @@ let map, userLocation, userCircle, routePolyline, destinationMarker;
 function initMap() {
     // Inicializar el mapa centrado en Argentina
     map = L.map('map', {
-        center: [-38.4161, -63.6167],  // Coordenadas de Argentina por defecto
-        zoom: 5,                       // Nivel de zoom por defecto
-        zoomControl: true               // Control de zoom habilitado
+        center: [-38.4161, -63.6167], // Coordenadas de Argentina
+        zoom: 5,
+        zoomControl: true
     });
 
     // Añadir capa base
@@ -24,12 +24,6 @@ function initMap() {
     } else {
         alert("La geolocalización no está soportada en este navegador.");
     }
-
-    // Desactivar la opción para que el mapa ajuste automáticamente el zoom después de hacer una ruta
-    map.on('zoomend', function() {
-        // Aquí puedes guardar el zoom actual para mantenerlo durante el uso
-        // Si necesitas guardar o manejar el zoom en algún lado, puedes hacer algo con map.getZoom()
-    });
 }
 
 function updateUserLocation(position) {
@@ -37,19 +31,17 @@ function updateUserLocation(position) {
     userLocation = L.latLng(latitude, longitude);
 
     if (!userCircle) {
-        // Crear un marcador pequeño (radio mínimo) para la ubicación del usuario
+        // Crear un marcador pequeño para la ubicación del usuario
         userCircle = L.circle(userLocation, {
             color: 'blue',
-            radius: 10, // Hacer el círculo más pequeño posible
+            radius: 10, // Hacer el círculo pequeño
             fillOpacity: 0.7
         }).addTo(map).bindPopup("Estás aquí").openPopup();
 
-        // Centrar el mapa en la ubicación del usuario (el usuario puede cambiar el zoom manualmente)
         map.setView(userLocation, map.getZoom());
     } else {
-        // Actualizar la posición del círculo y la vista
         userCircle.setLatLng(userLocation);
-        map.setView(userLocation, map.getZoom()); // Mantener el nivel de zoom
+        map.setView(userLocation, map.getZoom());
     }
 }
 
@@ -79,42 +71,41 @@ function searchRoute() {
                 return;
             }
 
-            console.log("Destino geocodificado:", destCoords); // Depuración: Ver las coordenadas obtenidas
+            console.log("Destino geocodificado:", destCoords);
 
             // Si ya existe un marcador de destino, lo eliminamos antes de agregar el nuevo
             if (destinationMarker) {
                 map.removeLayer(destinationMarker);
             }
 
-            // Colocar un pin en el lugar de destino
+            // Colocar un marcador en el destino
             destinationMarker = L.marker([destCoords.lat, destCoords.lng]).addTo(map)
                 .bindPopup("Destino: " + destination)
                 .openPopup();
 
-            // API key de GraphHopper
-            const apiKey = 'ea0313bf-ed8e-43de-a131-6b1d2fcde1ef';
-            const url = `https://graphhopper.com/api/1/route?point=${userLocation.lat},${userLocation.lng}&point=${destCoords.lat},${destCoords.lng}&key=${apiKey}&vehicle=car&locale=es&instructions=false`;
+            // URL de OSRM para obtener la ruta en coche
+            const url = `https://router.project-osrm.org/route/v1/driving/${userLocation.lng},${userLocation.lat};${destCoords.lng},${destCoords.lat}?overview=full&geometries=geojson`;
 
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.paths && data.paths.length > 0) {
-                        const route = data.paths[0];
-                        const routeCoordinates = route.points.coordinates.map(coord => [coord[1], coord[0]]); // Convertir a [lat, lng]
+                    if (data.routes && data.routes.length > 0) {
+                        const route = data.routes[0];
+                        const routeCoordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
 
                         // Si ya existe una ruta, eliminarla del mapa
                         if (routePolyline) {
                             map.removeLayer(routePolyline);
                         }
 
-                        // Dibujar la ruta como una línea roja en el mapa
+                        // Dibujar la nueva ruta
                         routePolyline = L.polyline(routeCoordinates, {
                             color: 'red',
                             weight: 5,
-                            opacity: 0.8
+                            opacity: 0.7
                         }).addTo(map);
 
-                        // Ajustar la vista del mapa para incluir toda la ruta (pero sin cambiar el zoom automáticamente)
+                        // Ajustar la vista del mapa para incluir toda la ruta
                         map.fitBounds(routePolyline.getBounds(), { animate: true, duration: 1 });
                     } else {
                         alert("No se encontró ninguna ruta.");
@@ -139,13 +130,12 @@ function geocodeDestination(destination) {
         .then(response => response.json())
         .then(data => {
             if (data && data.length > 0) {
-                // Retornar las coordenadas de la primera coincidencia
                 return {
                     lat: parseFloat(data[0].lat),
                     lng: parseFloat(data[0].lon)
                 };
             } else {
-                return null; // No se encontró ninguna coincidencia
+                return null;
             }
         });
 }
