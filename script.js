@@ -1,48 +1,179 @@
-let map, userLocation, userCircle, routePolyline, destinationMarker;
+// script.js
+let map, userMarker, routeLayer, destinationMarker;
+let searchHistory = [];
 
 function initMap() {
-    // Inicializar el mapa centrado en Argentina
-    map = L.map('map', {
-        center: [-38.4161, -63.6167], // Coordenadas de Argentina
-        zoom: 5,
-        zoomControl: true
+    map = new ol.Map({
+        target: 'map',
+        layers: [
+            new ol.layer.Tile({
+                source: new ol.source.OSM()
+            })
+        ],
+        view: new ol.View({
+            center: ol.proj.fromLonLat([-63.6167, -38.4161]),
+            zoom: 5
+        })
     });
 
-    // Añadir capa base
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
-    // Verificar si la geolocalización está disponible
     if (navigator.geolocation) {
         navigator.geolocation.watchPosition(updateUserLocation, handleLocationError, {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 5000
+            enableHighAccuracy: true
         });
     } else {
         alert("La geolocalización no está soportada en este navegador.");
     }
+    
+    document.addEventListener('click', function(event) {
+        const historyContainer = document.getElementById('history-container');
+        const historyButton = document.querySelector('[onclick="showHistory()"]');
+        
+        if (!historyContainer.contains(event.target) && event.target !== historyButton) {
+            historyContainer.style.display = 'none';
+        }
+    });
 }
 
 function updateUserLocation(position) {
     const { latitude, longitude } = position.coords;
-    userLocation = L.latLng(latitude, longitude);
-
-    if (!userCircle) {
-        // Crear un marcador pequeño para la ubicación del usuario
-        userCircle = L.circle(userLocation, {
-            color: 'blue',
-            radius: 10, // Hacer el círculo pequeño
-            fillOpacity: 0.7
-        }).addTo(map).bindPopup("Estás aquí").openPopup();
-
-        map.setView(userLocation, map.getZoom());
+    const userCoords = ol.proj.fromLonLat([longitude, latitude]);
+    
+    if (!userMarker) {
+        userMarker = new ol.Feature({
+            geometry: new ol.geom.Point(userCoords)
+        });
+        
+        const vectorSource = new ol.source.Vector({
+            features: [userMarker]
+        });
+        
+        const vectorLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style: new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 6,
+                    fill: new ol.style.Fill({ color: 'blue' })
+                })
+            })
+        });
+        
+        map.addLayer(vectorLayer);
+        map.getView().setCenter(userCoords);
     } else {
-        userCircle.setLatLng(userLocation);
-        map.setView(userLocation, map.getZoom());
+        userMarker.getGeometry().setCoordinates(userCoords);
     }
+}
+
+function showHistory() {
+    const historyContainer = document.getElementById('history-container');
+    historyContainer.style.display = historyContainer.style.display === 'block' ? 'none' : 'block';
+}
+
+function searchRoute() {
+    const destination = document.getElementById('destination').value;
+    if (!destination) {
+        alert("Por favor, ingresa un destino.");
+        return;
+    }
+
+    geocodeDestination(destination).then(destCoords => {
+        if (!destCoords) {
+            alert("Destino no encontrado.");
+            return;
+        }
+        
+        const userCoords = userMarker.getGeometry().getCoordinates();
+        const destPoint = ol.proj.fromLonLat([parseFloat(destCoords.lng), parseFloat(destCoords.lat)]);
+
+        if (destinationMarker) {
+            destinationMarker.getGeometry().setCoordinates(destPoint);
+        } else {
+            destinationMarker = new ol.Feature({
+                geometry: new ol.geom.Point(destPoint)
+            });
+            
+            const vectorSource = new ol.source.Vector({
+                features: [destinationMarker]
+            });
+            
+            const vectorLayer = new ol.layer.Vector({
+                source: vectorSource,
+                style: new ol.style.Style({
+                    image: new ol.style.Icon({
+                        src: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                        scale: 0.05
+                    })
+                })
+            });
+            
+            map.addLayer(vectorLayer);
+        }
+
+        fetch(`https://router.project-osrm.org/route/v1/driving/${ol.proj.toLonLat(userCoords).join(',')};${destCoords.lng},${destCoords.lat}?overview=full&geometries=geojson`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.routes && data.routes.length > 0) {
+                    const route = data.routes[0].geometry;
+                    const format = new ol.format.GeoJSON();
+                    const routeFeature = format.readFeature({
+                        type: 'Feature',
+                        geometry: route
+                    }, {
+                        dataProjection: 'EPSG:4326',
+                        featureProjection: 'EPSG:3857'
+                    });
+
+                    if (routeLayer) {
+                        map.removeLayer(routeLayer);
+                    }
+                    
+                    routeLayer = new ol.layer.Vector({
+                        source: new ol.source.Vector({ features: [routeFeature] }),
+                        style: new ol.style.Style({
+                            stroke: new ol.style.Stroke({ color: 'red', width: 3 })
+                        })
+                    });
+                    map.addLayer(routeLayer);
+                    
+                    displayRouteInfo(data.routes[0].distance, data.routes[0].duration);
+                    saveToHistory(destination, data.routes[0].distance, data.routes[0].duration);
+                }
+            });
+    });
+}
+
+function displayRouteInfo(distance, duration) {
+    const infoDiv = document.getElementById('route-info');
+    infoDiv.innerHTML = `
+        <strong>Distancia:</strong> ${(distance / 1000).toFixed(2)} km<br>
+        <strong>Tiempo estimado:</strong> ${(duration / 60).toFixed(2)} min
+    `;
+}
+
+function saveToHistory(destination, distance, duration) {
+    searchHistory.push({ destination, distance, duration });
+    updateHistoryList();
+}
+
+function updateHistoryList() {
+    const historyList = document.getElementById('history-list');
+    historyList.innerHTML = '';
+
+    searchHistory.forEach((route, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <strong>${route.destination}</strong><br>
+            Distancia: ${(route.distance / 1000).toFixed(2)} km<br>
+            Tiempo: ${(route.duration / 60).toFixed(2)} min
+        `;
+        historyList.appendChild(li);
+    });
+}
+
+function geocodeDestination(destination) {
+    return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${destination}`)
+        .then(response => response.json())
+        .then(data => data.length > 0 ? { lat: data[0].lat, lng: data[0].lon } : null);
 }
 
 function handleLocationError(error) {
@@ -50,95 +181,4 @@ function handleLocationError(error) {
     alert("No se pudo obtener tu ubicación.");
 }
 
-function searchRoute() {
-    const destination = document.getElementById('destination').value;
-
-    if (!userLocation) {
-        alert("No se ha detectado tu ubicación.");
-        return;
-    }
-
-    if (!destination) {
-        alert("Por favor, ingresa el destino.");
-        return;
-    }
-
-    // Geocodificar el destino
-    geocodeDestination(destination)
-        .then(destCoords => {
-            if (!destCoords) {
-                alert("No se encontró el destino.");
-                return;
-            }
-
-            console.log("Destino geocodificado:", destCoords);
-
-            // Si ya existe un marcador de destino, lo eliminamos antes de agregar el nuevo
-            if (destinationMarker) {
-                map.removeLayer(destinationMarker);
-            }
-
-            // Colocar un marcador en el destino
-            destinationMarker = L.marker([destCoords.lat, destCoords.lng]).addTo(map)
-                .bindPopup("Destino: " + destination)
-                .openPopup();
-
-            // URL de OSRM para obtener la ruta en coche
-            const url = `https://router.project-osrm.org/route/v1/driving/${userLocation.lng},${userLocation.lat};${destCoords.lng},${destCoords.lat}?overview=full&geometries=geojson`;
-
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.routes && data.routes.length > 0) {
-                        const route = data.routes[0];
-                        const routeCoordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-
-                        // Si ya existe una ruta, eliminarla del mapa
-                        if (routePolyline) {
-                            map.removeLayer(routePolyline);
-                        }
-
-                        // Dibujar la nueva ruta
-                        routePolyline = L.polyline(routeCoordinates, {
-                            color: 'red',
-                            weight: 5,
-                            opacity: 0.7
-                        }).addTo(map);
-
-                        // Ajustar la vista del mapa para incluir toda la ruta
-                        map.fitBounds(routePolyline.getBounds(), { animate: true, duration: 1 });
-                    } else {
-                        alert("No se encontró ninguna ruta.");
-                    }
-                })
-                .catch(err => {
-                    console.error("Error al obtener la ruta:", err);
-                    alert("Error al obtener la ruta. Verifica el destino ingresado.");
-                });
-        })
-        .catch(err => {
-            console.error("Error al geocodificar el destino:", err);
-            alert("Error al geocodificar el destino. Inténtalo nuevamente.");
-        });
-}
-
-// Función para geocodificar el destino
-function geocodeDestination(destination) {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destination)}`;
-
-    return fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            if (data && data.length > 0) {
-                return {
-                    lat: parseFloat(data[0].lat),
-                    lng: parseFloat(data[0].lon)
-                };
-            } else {
-                return null;
-            }
-        });
-}
-
-// Inicializar el mapa al cargar la página
-window.onload = initMap;
+initMap();
